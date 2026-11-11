@@ -9,7 +9,7 @@
 //////////////////////////////
 // SETTING UP AMBIENT STUFF //
 //////////////////////////////
-TestParams:=[9]; //INSERT YOUR FAVOURITE SELECTION OF q YOU WOULD LIKE TO RUN OVER
+TestParams:=[9]; //INSERT THE SELECTION OF q TO RUN OVER
 for Q in [1..#TestParams] do
 q:=TestParams[Q];
 k := GF(q);
@@ -37,11 +37,8 @@ end function;
 // APPLY A PGL3 MATRIX TO AN AFFINE POINT [x,y]
 function ApplyMatrix(M, pt, k)
     v := M * Matrix(k,3,1,[pt[1],pt[2],k!1]);
-    if v[3][1] ne 0 then
-        return [v[1][1]/v[3][1], v[2][1]/v[3][1]];
-    else
-        return [v[1][1], v[2][1]];
-    end if;
+    assert v[3][1] ne 0;
+    return [v[1][1]/v[3][1], v[2][1]/v[3][1]];
 end function;
 
 // BUILD ORBIT REPRESENTATIVES AND PRECOMPUTE ORBITS
@@ -55,9 +52,7 @@ for pt in AllPts do
     orbit := {};
     for M in Mats do
         img := ApplyMatrix(M, pt, k);
-        if img in AllPtsSet then
-            Include(~orbit, img);
-        end if;
+        Include(~orbit, img);
     end for;
     for p in orbit do
         Include(~Seen, p);
@@ -66,8 +61,7 @@ for pt in AllPts do
     Append(~Orbits, orbit);
 end for;
 U := Sort(Reps);
-print "Original |U|:", #AllPts;
-print "Reduced |U|:", #U;
+print "Number of S4-orbits:", #U;
 
 // PRECOMPUTE CUMULATIVE EXCLUDED SETS
 // ExcludedUpTo[ii] = union of orbits of U[1],...,U[ii-1]
@@ -211,7 +205,7 @@ end function;
 t0:=Cputime();
 SplitCount:= 0;
 FullCount := 0;
-FullGuys := [];
+FullTuples := [];
 FourPoints:=[[1,0,0],[0,1,0],[0,0,1],[1,1,1]];
 
 // FIFTH POINT LOOP
@@ -302,7 +296,7 @@ for i in [1..#U] do
             if #X eq 0 then
                 FullCount := FullCount + 1;
                 //[a,b,c,d,e,f];
-                Append(~FullGuys,[a,b,c,d,e,f]);
+                Append(~FullTuples,[a,b,c,d,e,f]);
             end if;
             SplitCount:=SplitCount+1;
             if SplitCount mod 10000 eq 0 then
@@ -312,7 +306,7 @@ for i in [1..#U] do
     end for;
     print "Completed loop", i, "in", Cputime(t0); 
 end for;
-print "#FullGuys =", #FullGuys;
+print "#FullTuples =", #FullTuples;
 print "SplitCount =", SplitCount;
 end for;
 
@@ -426,7 +420,7 @@ end function;
 // STEP 1: CONSTRUCT THE QUARTICS //
 ////////////////////////////////////
 FullQuartics := [];
-for g in FullGuys do
+for g in FullTuples do
     Q := SevenTupleToQuartic(g[1],g[2],g[3],g[4],g[5],g[6],k);
     Append(~FullQuartics, Q);
 end for;
@@ -436,7 +430,7 @@ end for;
 //////////////////////////////////////
 // Find isomorphism classes
 PP := ProjectivePlane(k);
-Classes := [];
+FullQuarticClasses := [];
 Remaining := [1..#FullQuartics];
 while #Remaining gt 0 do
     i := Remaining[1];
@@ -452,14 +446,14 @@ while #Remaining gt 0 do
             Append(~NewRemaining, j);
         end if;
     end for;
-    Append(~Classes, class);
+    Append(~FullQuarticClasses, class);
     print "Class complete in", Cputime(t0);
     Remaining := NewRemaining;
     print #Remaining;
 end while;
-print "Number of isomorphism classes:", #Classes;
-for i in [1..#Classes] do
-    print "Class", i, "has", #Classes[i], "members";
+print "Number of isomorphism classes:", #FullQuarticClasses;
+for i in [1..#FullQuarticClasses] do
+    print "Class", i, "has", #FullQuarticClasses[i], "members";
 end for;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -514,28 +508,32 @@ function Normalize7Tuple(T, k)
 end function;
 
 
-// Build the 7-point projective tuple from a FullGuys entry [a,b,c,d,e,f]
+// Build the 7-point projective tuple from a FullTuples entry [a,b,c,d,e,f]
 SevenTuple := function(g, k)
     return [[k!1,k!0,k!0],[k!0,k!1,k!0],[k!0,k!0,k!1],[k!1,k!1,k!1],
             [k!g[1],k!g[2],k!1],[k!g[3],k!g[4],k!1],[k!g[5],k!g[6],k!1]];
 end function;
 
 // PGL3 REDUCTION
-// OUTPUT: Reps (one FullGuys entry per PGL3 class) and the bucket map.
-function ReduceToPGL3Classes(FullGuys, k)
+// OUTPUT: Reps (one FullTuples entry per PGL3 class) and the bucket map.
+function ReduceToPGL3Classes(FullTuples, k)
     buckets := AssociativeArray();
     reps := [];
-    for idx in [1..#FullGuys] do
-        key := Normalize7Tuple(SevenTuple(FullGuys[idx], k), k);
+    for idx in [1..#FullTuples] do
+        key := Normalize7Tuple(SevenTuple(FullTuples[idx], k), k);
         if IsDefined(buckets, key) then
             Append(~buckets[key], idx);
         else
             buckets[key] := [idx];
-            Append(~reps, FullGuys[idx]);
+            Append(~reps, FullTuples[idx]);
         end if;
     end for;
     return reps, buckets;
 end function;
+
+///////////////////////
+//END OF ALGORITHM 4 //
+///////////////////////
 
 // QUADRATIC TRANSFORMATION
 sigma := function(q) return [q[2]*q[3], q[1]*q[3], q[1]*q[2]]; end function;
@@ -557,8 +555,9 @@ function ApplyCremona(T, trip, k)   // quadratic transformation at a triple of t
 end function;
 
 // CREMONA MERGE
-// Merge a list of PGL3-class reps (each in FullGuys format [a,b,c,d,e,f]) under Cremona
+// Merge a list of PGL3-class reps (each in FullTuples format [a,b,c,d,e,f]) under Cremona
 function CremonaMerge(Reps, k)
+// Step 1: Make an array indexed by canonical PGL-reps
     ClassReps := [];
     for g in Reps do
         Append(~ClassReps, [[k!1,k!0,k!0],[k!0,k!1,k!0],[k!0,k!0,k!1],[k!1,k!1,k!1],
@@ -567,6 +566,7 @@ function CremonaMerge(Reps, k)
     nc := #ClassReps;
     keyToClass := AssociativeArray();
     for i in [1..nc] do keyToClass[Normalize7Tuple(ClassReps[i],k)] := i; end for;
+// Step 2: Find the "Cremona neighbours" of each tuple
     triples := [Sort([x : x in s]) : s in Subsets({1..7},3)];   // C(7,3) = 35
     nbrs := [[Integers()|] : i in [1..nc]];
     for i in [1..nc] do
@@ -582,6 +582,7 @@ function CremonaMerge(Reps, k)
             end if;
         end for;
     end for;
+// Step 3: Group into connected components under Cremona equivalence
     comp := [0 : i in [1..nc]]; ncomp := 0;
     for start in [1..nc] do
         if comp[start] ne 0 then continue; end if;
@@ -593,7 +594,7 @@ function CremonaMerge(Reps, k)
             for y in nbrs[x] do if comp[y] eq 0 then Append(~stack, y); end if; end for;
         end while;
     end for;
-    // One FullGuys-format rep per connected component
+    // One FullTuples-format rep per connected component
     classReps := [];
     seen := {};
     for i in [1..nc] do
@@ -609,7 +610,7 @@ end function;
 ////////////////////////////////////////////
 // ALGORITHM 5: SIEVE BY PGL3 AND CREMONA //
 ////////////////////////////////////////////
-reps, buckets := ReduceToPGL3Classes(FullGuys, k);              // FullGuys -> PGL3-class reps
+reps, buckets := ReduceToPGL3Classes(FullTuples, k);              // FullTuples -> PGL3-class reps
 printf "PGL3 classes: %o\n", #reps;
 ncomp, comp, classReps := CremonaMerge(reps, k);                // PGL3 classes -> Cremona classes
 printf "Cremona classes: %o\n", ncomp;
@@ -622,7 +623,7 @@ printf "Cremona classes: %o\n", ncomp;
 // ALGORITHM 6: COMPUTE A AND B IN CHARACTERISTIC 2 //
 //////////////////////////////////////////////////////
 
-// Input: g = [a,b,c,d,e,f] in FullGuys format; k = GF(2^n).
+// Input: g = [a,b,c,d,e,f] in FullTuples format; k = GF(2^n).
 // Output: A (conic), B (quartic).
 function ComputeABFull(g, k)
     R<X,Y,Z>   := PolynomialRing(k, 3);

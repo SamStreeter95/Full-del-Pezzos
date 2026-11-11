@@ -7,7 +7,7 @@
 //////////////////////////////
 // SETTING UP AMBIENT STUFF //
 //////////////////////////////
-// Edit this list to select the fields to run over.
+// Edit this list to select the q for the fields Fq to run over
 TestParams := [9,11,13,16,17,19,23];
 // Results[q] = <field, full tuples, split count, PGL3 representatives,
 //               component labels, isomorphism representatives, models>.
@@ -254,25 +254,25 @@ for Q in [1..#TestParams] do
             for l in [1..#Available] do
                 w:=Available[l];
                 if w notin Wset then continue; end if;
-                // symmetry breaking: avoid double counting {u,v,w} and {u,w,v}
+                // Symmetry breaking: avoid double counting {u,v,w} and {u,w,v}
                 if Position(AllPts, w) le Position(AllPts, v) then continue; end if;
                 SevenBad:={};
                 e:=w[1];
                 f:=w[2];
                 SevenPoints:=SixPoints cat [[e,f,1]];
-                //Removing lines — over FullW
+                // Removing lines — over FullW
                 for ll in [1..6] do
                     lc:=LineFromPoints([SixPoints[ll],[e,f,1]]);
                     SevenBad join:= {z:z in FullW | lc[1]*z[1]+lc[2]*z[2]+lc[3] eq 0};
                 end for;
-                //Removing conics — over FullW
+                // Removing conics — over FullW
                 for I in [1..6] do
                     for J in [I+1..6] do
                         cc := ConicFromMatrixAndPoint(ConicIdx[<I,J>], [e,f,1]);
                         SevenBad join:= {z: z in FullW | cc[1]*z[1]^2 + cc[2]*z[2]^2 + cc[3] + cc[4]*z[1]*z[2] + cc[5]*z[1] + cc[6]*z[2] eq 0};
                     end for;
                 end for;
-                //Removing cubics — over FullW
+                // Removing cubics — over FullW
                 for A in [1..7] do
                     ca := CubicFromMatrixAndPoint(CubicMat6, SevenPoints, A);
                     SevenBad join:= {z:z in FullW | ca[1]*z[1]^3 + ca[2]*z[2]^3 + ca[3] + ca[4]*z[1]^2*z[2] + ca[5]*z[1]^2 + ca[6]*z[2]^2*z[1] + ca[7]*z[2]^2 + ca[8]*z[1] + ca[9]*z[2] + ca[10]*z[1]*z[2] eq 0};
@@ -294,7 +294,7 @@ for Q in [1..#TestParams] do
     end for;
     print "#FullTuples =", #FullTuples;
     print "SplitCount =", SplitCount;
-    // The outer field loop continues through classification and model recovery.
+    // The outer field loop continues through classification and model recovery
     ////////////////////////
     // END OF ALGORITHM 1 //
     ////////////////////////
@@ -350,7 +350,7 @@ for Q in [1..#TestParams] do
         [k!g[1],k!g[2],k!1],[k!g[3],k!g[4],k!1],[k!g[5],k!g[6],k!1]];
     end function;
     // PGL3 REDUCTION
-    // OUTPUT: Reps (one FullTuples entry per PGL3 class) and the bucket map.
+    // OUTPUT: Reps (one FullTuples entry per PGL3 class) and the bucket map
     function ReduceToPGL3Classes(FullTuples, k)
         buckets := AssociativeArray();
         reps := [];
@@ -479,67 +479,67 @@ for Q in [1..#TestParams] do
         // STEP 3: COMPUTE THE BRANCH DIVISOR //
         ////////////////////////////////////////
         if Characteristic(k) ne 2 then
-            // F0, F1, F2 and J belong to R = k[X,Y,Z].
+            // F0, F1, F2 and J belong to R = k[X,Y,Z]
             R := Parent(F0);
             k := BaseRing(R);
             S<x,y,z> := PolynomialRing(k, 3);
-            // The 15 quartic monomials in the target coordinates.
+            // The 15 quartic monomials in the target coordinates
             QuarticMons := [S | ];
             for i in [0..4] do
                 for j in [0..4-i] do
                     Append(~QuarticMons, x^i*y^j*z^(4-i-j));
                 end for;
             end for;
-            // The 91 degree-12 monomials in the source coordinates.
+            // The 91 degree-12 monomials in the source coordinates
             SourceMons := [R | ];
             for i in [0..12] do
                 for j in [0..12-i] do
                     Append(~SourceMons, R.1^i*R.2^j*R.3^(12-i-j));
                 end for;
             end for;
-            // Substitute the three cubics into each quartic monomial.
+            // Substitute the three cubics into each quartic monomial
             Pullbacks := [Evaluate(m, [F0,F1,F2]) : m in QuarticMons];
-            // Express all pullbacks and J^2 in the same monomial basis.
+            // Express all pullbacks and J^2 in the same monomial basis
             M := Matrix(k, [[MonomialCoefficient(g, m) : m in SourceMons]: g in Pullbacks]);
             v := Vector(k, [MonomialCoefficient(J^2, m) : m in SourceMons]);
             assert Rank(M) eq 15;
             coeffs := Solution(M, v);
-            // Recover the branch quartic.
+            // Recover the branch quartic
             f := &+[coeffs[i]*QuarticMons[i] : i in [1..15]];
             assert Evaluate(f, [F0,F1,F2]) eq J^2;
             return f;
         else
-            // F0, F1, F2 and J belong to R = k[X,Y,Z].
+            // F0, F1, F2 and J belong to R = k[X,Y,Z]
             R := Parent(F0);
             k := BaseRing(R);
             assert Characteristic(k) eq 2;
             S<x,y,z> := PolynomialRing(k, 3);
-            // The six quadratic monomials in the target coordinates.
+            // The six quadratic monomials in the target coordinates
             QuadMons := [x^2, y^2, z^2, x*y, x*z, y*z];
-            // The 28 sextic monomials in the source coordinates.
+            // The 28 sextic monomials in the source coordinates
             SourceMons := [R | ];
             for i in [0..6] do
                 for j in [0..6-i] do
                     Append(~SourceMons, R.1^i*R.2^j*R.3^(6-i-j));
                 end for;
             end for;
-            // Substitute the three cubics into each quadratic monomial.
+            // Substitute the three cubics into each quadratic monomial
             Pullbacks := [Evaluate(m, [F0,F1,F2]) : m in QuadMons];
-            // Express the pullbacks and J in the same monomial basis.
+            // Express the pullbacks and J in the same monomial basis
             M := Matrix(k, [[MonomialCoefficient(g, m) : m in SourceMons]: g in Pullbacks]);
             v := Vector(k, [MonomialCoefficient(J, m) : m in SourceMons]);
             assert Rank(M) eq 6;
             coeffs := Solution(M, v);
-            // Recover the branch conic.
+            // Recover the branch conic
             A := &+[coeffs[i]*QuadMons[i] : i in [1..6]];
             assert Evaluate(A, [F0,F1,F2]) eq J;
             ////////////////////////////////
             // STEP 4: COMPUTE THE SEXTIC //
             ////////////////////////////////
-            // The original seven points, as coordinate sequences.
+            // The original seven points, as coordinate sequences
             Pts := SevenPoints;
-            // SourceMons is still the list of 28 sextic monomials.
-            // Impose vanishing of the value and first derivatives.
+            // SourceMons is still the list of 28 sextic monomials
+            // Impose vanishing of the value and first derivatives
             DoubleRows := [];
             for m in SourceMons do
                 row := [k | ];
@@ -552,9 +552,9 @@ for Q in [1..#TestParams] do
             end for;
             V6 := Nullspace(Matrix(k, DoubleRows));
             assert Dimension(V6) eq 7;
-            // M is still the 6 x 28 matrix of quadratic pullbacks.
+            // M is still the 6 x 28 matrix of quadratic pullbacks
             QuadSpace := RowSpace(M);
-            // Choose a sextic outside their span.
+            // Choose a sextic outside their span
             T := R!0;
             for vec in Basis(V6) do
                 if vec notin QuadSpace then
@@ -578,7 +578,7 @@ for Q in [1..#TestParams] do
                     Append(~Degree12Mons, R.1^i*R.2^j*R.3^(12-i-j));
                 end for;
             end for;
-            // Unknowns: mu, followed by the 15 coefficients of B0.
+            // Unknowns: mu, followed by the 15 coefficients of B0
             RelationForms := [J*T] cat [
             Evaluate(m, [F0,F1,F2]) : m in QuarticMons
             ];
@@ -593,7 +593,7 @@ for Q in [1..#TestParams] do
             sol := Solution(N, rhs);
             mu := sol[1];
             assert mu ne 0;
-            // Rescale to retain exactly the previously computed A.
+            // Rescale to retain exactly the previously computed A
             B := &+[
             (sol[i+1]/mu^2)*QuarticMons[i] : i in [1..15]
             ];
@@ -604,9 +604,9 @@ for Q in [1..#TestParams] do
             return A, B;
         end if;
     end function;
-    // Compute one anticanonical model per isomorphism class.
-    // Store f in odd characteristic, and <A, B> in characteristic 2.
-    Models := [* *];  // Models may belong to separately constructed polynomial rings.
+    // Compute one anticanonical model per isomorphism class
+    // Store f in odd characteristic, and <A, B> in characteristic 2
+    Models := [* *];  // Models may belong to separately constructed polynomial rings
     for idx in [1..#classReps] do
         if Characteristic(k) eq 2 then
             A, B := AnticanonicalModel(SevenTuple(classReps[idx], k), k);
@@ -618,9 +618,9 @@ for Q in [1..#TestParams] do
             printf "q = %o, class %o:\nw^2 = %o\n", q, idx, f;
         end if;
     end for;
-    // Retain the output separately for every field in TestParams.
+    // Retain the output separately for every field in TestParams
     Results[q] := <k, FullTuples, SplitCount, reps, comp, classReps, Models>;
-end for; // End of the outer loop over TestParams.
+end for; // End of the outer loop over TestParams
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
